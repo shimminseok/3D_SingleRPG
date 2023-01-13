@@ -30,10 +30,10 @@ public class ObjectPoolingManager : MonoBehaviour
         Initialize(10, DefineEnumHelper.PoolingObj.HPParticle);
         Initialize(2, DefineEnumHelper.PoolingObj.Buff);
         Initialize(5, DefineEnumHelper.PoolingObj.FootStepEffect);
-        Initialize(20, DefineEnumHelper.MonsterObj.Slime);
-        Initialize(20, DefineEnumHelper.MonsterObj.SoldierSlime);
-        Initialize(20, DefineEnumHelper.MonsterObj.VikingSlime);
-        Initialize(20, DefineEnumHelper.MonsterObj.KingSlime);
+        Initialize(1, DefineEnumHelper.MonsterObj.Slime);
+        //Initialize(20, DefineEnumHelper.MonsterObj.SoldierSlime);
+        //Initialize(20, DefineEnumHelper.MonsterObj.VikingSlime);
+        //Initialize(20, DefineEnumHelper.MonsterObj.KingSlime);
     }
     public void Initialize(int initCount, DefineEnumHelper.PoolingObj kind)
     {

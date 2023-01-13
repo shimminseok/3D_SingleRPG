@@ -69,7 +69,8 @@ public class Inventory : MonoBehaviour
         {
             for (int n = 0; n < _slotList.Count; n++)
             {
-                if (!_slotList[n]._slotData._itemData._itemType.Equals((int)DefineEnumHelper.ItemType.MountedItem) && _slotList[n]._slotData._amount < _slotList[n]._maxAmount && key.Equals(_slotList[n]._slotData._key))
+                if (!_slotList[n]._slotData._itemData._itemType.Equals((int)DefineEnumHelper.ItemType.MountedItem)
+                    && _slotList[n]._slotData._amount < _slotList[n]._maxAmount && key.Equals(_slotList[n]._slotData._key))
                 {
                     UpdataSlotData(n, key, data, amount);
                     if (_slotList[n]._slotData._itemData._itemType.Equals((int)DefineEnumHelper.ItemType.OtherItem))

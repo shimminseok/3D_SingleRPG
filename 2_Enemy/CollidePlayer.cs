@@ -10,7 +10,7 @@ public class CollidePlayer : MonoBehaviour
         {
             MonsterController owner = GetComponentInParent<MonsterController>();
             owner._target = other.gameObject;
-            owner._currentState = SlimeAnimationState.Attack;
+            //owner.CurState(SlimeAnimationState.TargetOn);
         }
     }
 }

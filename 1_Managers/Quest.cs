@@ -77,7 +77,6 @@ public class Quest : ScriptableObject
     public event CancledHandler _onCanceled;
     public event NewTaskGroupHandler _onNewTaskGroup;
 
-    int _cheakCount;
     public void OnRegister()
     {
         Debug.Assert(!IsRegistered, "This quest has already been registered");

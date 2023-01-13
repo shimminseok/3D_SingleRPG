@@ -38,19 +38,6 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        test.Add(new System.Tuple<int, string>(1,"a"));
-        test.Add(new System.Tuple<int, string>(2,"b"));
-        test.Add(new System.Tuple<int, string>(3,"c"));
-        test.Add(new System.Tuple<int, string>(4,"d"));
-
-        for(int n = 0; n< test.Count;n++)
-        {
-            Debug.LogFormat("{0} : {1}", test[n].Item1, test[n].Item2);
-        }
-        foreach(var temp in test)
-        {
-            Debug.LogFormat("{0} : {1}", temp.Item1, temp.Item2);
-        }
     }
     private void OnEnable()
     {

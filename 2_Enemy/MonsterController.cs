@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public enum SlimeAnimationState { Idle, Walk, Attack, Die }
+public enum SlimeAnimationState { Idle, Roaming, TargetOn, Attack, Die }
 public enum WolkType { Wlak, Run }
 public class MonsterController : ObjectBase
 {
-    public Face _faces;
-    public GameObject _smileBody;
-    public SlimeAnimationState _currentState;
+
 
     [SerializeField] int _id;
     [SerializeField] DefineEnumHelper.MonsterObj _monsterKind;
     [SerializeField] List<DefineEnumHelper.MonsterDropItem> _dropItemID;
+    [SerializeField] Face _faces;
+    [SerializeField] GameObject _smileBody;
 
 
     //MonsterInfo
@@ -25,12 +25,17 @@ public class MonsterController : ObjectBase
 
     Material _faceMaterial;
     Vector3 _originPos;
+    Vector3 _goalPos;
 
-    WolkType _wolkType = WolkType.Wlak;
+    [SerializeField] SlimeAnimationState _currentState = SlimeAnimationState.Idle;
+    //WolkType _wolkType = WolkType.Wlak;
 
     public float _curHp;
     public UnityEngine.Events.UnityEvent _onDead;
+    float _maxDistance = 30;
+    bool _isArrive = true;
 
+    public SlimeAnimationState CurState(SlimeAnimationState state) => _currentState = state;
     public float HittingMe(int dam) => (_curHp -= (dam));
 
     void Awake()
@@ -40,15 +45,17 @@ public class MonsterController : ObjectBase
         _faceMaterial = _smileBody.GetComponent<Renderer>().materials[1];
         _curHp = _maxHp;
     }
-    void Start()
+    void OnEnable()
     {
         InitData();
+        StartCoroutine(MonsterStateChange());
+        StartCoroutine(MonsterAction());
     }
     void InitData()
     {
         if (DataTableManager._instance._monsterDataDic.TryGetValue(_id, out stDataTable.stMonsterInitData data))
         {
-            transform.localPosition = _originPos = RandomNavSphere(GameManager._instance.MonsterSpawnPoints(_monsterKind).position, 70);
+            transform.position = _originPos = RandomNavSphere(GameManager._instance.MonsterSpawnPoints(_monsterKind).position, 70);
             _target = null;
             _name = data._name;
             Level = data.Level;
@@ -62,10 +69,9 @@ public class MonsterController : ObjectBase
             FinalDamage();
             _isDie = false;
             _currentState = SlimeAnimationState.Idle;
-            _wolkType = WolkType.Wlak;
             FinalDefence();
             GetComponent<CapsuleCollider>().enabled = true;
-
+            _animator.applyRootMotion = false;
         }
     }
     public IEnumerator Respawn()
@@ -73,7 +79,7 @@ public class MonsterController : ObjectBase
         yield return new WaitForSeconds(3);
         gameObject.SetActive(false);
         yield return new WaitForSeconds(1);
-        InitData();
+        //InitData();
         ObjectPoolingManager._instance.GetObject(_monsterKind, GameManager._instance.MonsterSpawnPoints(_monsterKind));
     }
     void Update()
@@ -83,67 +89,11 @@ public class MonsterController : ObjectBase
             _curHp = 0;
             _currentState = SlimeAnimationState.Die;
         }
-        if (!_isDie)
-        {
-            switch (_currentState)
-            {
-                case SlimeAnimationState.Idle:
-                    StartCoroutine(StopAgent());
-                    SetFace(_faces.Idleface);
-                    break;
-                case SlimeAnimationState.Walk:
-                    _agent.isStopped = false;
-                    if (_wolkType == WolkType.Wlak)
-                    {
-                        if (_agent.remainingDistance < _agent.stoppingDistance)
-                        {
-                            _currentState = SlimeAnimationState.Idle;
-                        }
-                    }
-                    else
-                    {
-                        if (_agent.remainingDistance < _agent.stoppingDistance)
-                        {
-                            _currentState = SlimeAnimationState.Attack;
-                        }
-                        else if (_agent.remainingDistance > 30)
-                        {
-                            _agent.SetDestination(_originPos);
-                            _wolkType = WolkType.Wlak;
-                        }
-                        else
-                        {
-                            _agent.SetDestination(_target.transform.position);
-                        }
-                    }
-                    _animator.SetFloat("Speed", _agent.velocity.magnitude);
-                    break;
-                case SlimeAnimationState.Attack:
-                    _agent.SetDestination(_target.transform.position);
-                    if (_agent.remainingDistance < _agent.stoppingDistance)
-                    {
-                        _agent.isStopped = true;
-                        Attack();
-                    }
-                    else
-                    {
-                        _wolkType = WolkType.Run;
-                        _currentState = SlimeAnimationState.Walk;
-                    }
-                    break;
-                case SlimeAnimationState.Die:
-                    _agent.isStopped = true;
-                    if (!_isDie)
-                    {
-                        _onDead.Invoke();
-                    }
-                    break;
-            }
-        }
     }
     public void Dead()
     {
         _isDie = true;
+        _animator.applyRootMotion = true;
         _animator.SetTrigger("Damage");
         _animator.SetInteger("DamageType", 2);
         GetComponent<CapsuleCollider>().enabled = false;
@@ -153,7 +103,7 @@ public class MonsterController : ObjectBase
         SetFace(_faces.damageFace);
         //È¹µæÈ®·ü 30%
         int acquisitionProbability = Random.Range(0, 100);
-        if (acquisitionProbability >= 30)
+        if (acquisitionProbability >= 70)
         {
             if (_dropItemID.Count > 0)
             {
@@ -168,29 +118,110 @@ public class MonsterController : ObjectBase
     {
         _faceMaterial.SetTexture("_MainTex", tex);
     }
-    IEnumerator StopAgent()
-    {
-        if (_agent.isStopped)
-        {
-            yield break;
-        }
-        _agent.isStopped = true;
-        _animator.SetFloat("Speed", 0);
-        yield return new WaitForSeconds(3f);
-        if (_currentState == SlimeAnimationState.Attack)
-        {
-            yield break;
-        }
-        _currentState = SlimeAnimationState.Walk;
-        _agent.SetDestination(RandomNavSphere(_originPos, 10));
-        SetFace(_faces.WalkFace);
-    }
     Vector3 RandomNavSphere(Vector3 origin, float dist)
     {
         Vector3 randDirection = Random.insideUnitSphere * dist + origin;
         NavMeshHit navHit;
         NavMesh.SamplePosition(randDirection, out navHit, dist, NavMesh.AllAreas);
         return navHit.position;
+    }
+
+    IEnumerator MonsterStateChange()
+    {
+        while (!_isDie)
+        {
+            yield return new WaitForSeconds(0.1f);
+            if (_target != null)
+            {
+                if (Vector3.Distance(_target.transform.position, transform.position) < _agent.stoppingDistance)
+                    _currentState = SlimeAnimationState.Attack;
+                else
+                    _currentState = SlimeAnimationState.TargetOn;
+            }
+            else
+            {
+                if (_goalPos != Vector3.zero)
+                {
+                    if (Vector3.Distance(_goalPos,transform.position) > _agent.stoppingDistance) // ¸ñÀûÁö¿¡ µµÂø ¾ÈÇßÀ»¶§
+                    {
+                        _currentState = SlimeAnimationState.Roaming;
+                    }
+                    else                                                                        // ¸ñÀûÁö¿¡ µµÂø ÇßÀ»¶§
+                    {
+                        _currentState = SlimeAnimationState.Idle;
+                    }
+                }
+                else
+                {
+                    _currentState = SlimeAnimationState.Idle;
+                }
+            }
+        }
+    }
+    IEnumerator MonsterAction()
+    {
+        while (!_isDie)
+        {
+            switch (_currentState)
+            {
+                case SlimeAnimationState.Idle:
+                    _agent.isStopped = true;
+                    _animator.SetFloat("Speed",0);
+                    _isArrive = true;
+                    yield return new WaitForSeconds(3);
+                    _goalPos = RandomNavSphere(_originPos, 10);
+                    break;
+                case SlimeAnimationState.Roaming:
+                    MonsterRoaming();
+                    break;
+                case SlimeAnimationState.TargetOn:
+                    TargetOn();
+                    break;
+                case SlimeAnimationState.Attack:
+                    MonsterAttack();
+                    break;
+                case SlimeAnimationState.Die:
+                    MonsterDie();
+                    break;
+            }
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+
+    void MonsterRoaming()
+    {
+        _isArrive = false;
+        _agent.isStopped = false;
+        _agent.SetDestination(_goalPos);
+        _animator.SetFloat("Speed", 1);
+    }
+    void TargetOn()
+    {
+        _agent.isStopped = false;
+        _animator.ResetTrigger("Attack");
+        _animator.SetFloat("Speed", 1);
+        _agent.SetDestination(_target.transform.position);
+        SetFace(_faces.jumpFace);
+        if (Vector3.Distance(_target.transform.position, transform.position) < _agent.stoppingDistance)
+        {
+            _currentState = SlimeAnimationState.Attack;
+        }
+        if (Vector3.Distance(_target.transform.position, transform.position) > _maxDistance)
+        {
+            _target = null;
+        }
+    }
+    void MonsterAttack()
+    {
+        _agent.isStopped = true;
+        SetFace(_faces.attackFace);
+        _animator.SetTrigger("Attack");
+
+    }
+    void MonsterDie()
+    {
+        _agent.isStopped = true;
+        _onDead.Invoke();
     }
 
     public override void Attack()

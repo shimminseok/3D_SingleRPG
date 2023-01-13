@@ -17,7 +17,7 @@ public class PlayerCollisionScript : MonoBehaviour
             float dam = other.gameObject.GetComponent<ProjectileScript>().Damage - owner._defence > 0 ? other.gameObject.GetComponent<ProjectileScript>().Damage - owner._defence : 1;
             gameObject.GetComponent<HPScript>().ChangeHP(-Mathf.RoundToInt(dam), other.ClosestPoint(transform.position),Color.green);
             gameObject.GetComponent<HPScript>().GetHitEffect(other.ClosestPoint(transform.position));
-            owner._currentState = SlimeAnimationState.Attack;
+            owner.CurState(SlimeAnimationState.Attack);
             owner._target = other.transform.parent.gameObject;
             owner.HittingMe((int)dam);
         }

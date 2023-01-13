@@ -57,17 +57,17 @@ public class DataTableManager : MonoBehaviour
     {
         for (int i = 0; i < data.Count; i++)
         {
-            int index = int.Parse(data[i][0].ToString()); //인덱스
+            int key = int.Parse(data[i][0].ToString()); //아이템 key
             string name = data[i][1].ToString(); //이름
             int type = int.Parse(data[i][2].ToString()); //아이템 타입
             int item_kind = int.Parse(data[i][3].ToString()); //아이템 종류
             int stat = int.Parse(data[i][4].ToString()); //증가 능력치
-            float value = float.Parse(data[i][5].ToString());
-            int price = int.Parse(data[i][6].ToString());
-            string tooltip = data[i][7].ToString();
-            int image = int.Parse(data[i][8].ToString());
+            float value = float.Parse(data[i][5].ToString()); //증가 값
+            int price = int.Parse(data[i][6].ToString()); //아이템 가격
+            string tooltip = data[i][7].ToString(); //아이템 정보
+            int image = int.Parse(data[i][8].ToString()); //아이템 이미지 배열 인덱스
             stItemData itemData = new stItemData(name, type, item_kind, stat, value, price, tooltip,image);
-            itemDic.Add(index, itemData);
+            itemDic.Add(key, itemData);
 
         }
     }
